@@ -1,0 +1,87 @@
+-- Author: Elliot Silva (es1242)
+
+module HW4 where
+import Parser
+import Regular
+
+-- Write regular expressions for the languages described below. Each language
+-- is defined over the alphabet {a,b,c}. Use the syntax we have used in class.
+-- For reference:
+--     0  - empty language (includes no strings)
+--     e  - empty string language (includes only the empty string)
+--     a,b,c  - single symbol languages (one string with one symbol)
+--
+--  given regular expressions R and S,
+--     R|S   - choice
+--     RS    - concatenation
+--     R*    - Kleene closure (repeat zero or more times)
+--
+-- Use parentheses to ensure proper parsing.
+--
+-- I recommend downloading at least the Regular and Parser modules posted on
+-- Canvas. Use parseReg or getReg to parse your regular expressions and use
+-- the other functions in Regular to check whether your regular expression
+-- describes the appropriate language.
+
+
+-- Example. Every string not containing a.
+
+example = "0"
+
+-- to solve, replace the definition above with
+-- example = "(b|c)*"
+--
+-- Note that the language description is implicitly quantified over all strings
+-- made from a, b, and c. We are requesting every string in that set that meets
+-- the required property (in this case, not containing a).
+
+{---------------------------------------------------------------------------------------}
+
+--every possible string = "(a|b|c)*"
+
+-- 1. Every string containing exactly one a.
+
+lang1 = "(b|c)*a(b|c)*"
+
+
+
+-- 2. Every string containing at least one a and at least one b.
+
+lang2 = "(a|b|c)*(a(a|b|c)*b(a|b|c)*|b(a|b|c)*a(a|b|c)*)"
+        --anything can come first
+        --decide if b or a comes first, concat both options with any string
+
+
+
+-- 3. Every string containing the sequence ab exactly once.
+
+lang3 = "(aa*c|b|c)*aa*b(aa*c|b|c)*a*"
+        --as long as a never comes before b before the first "ab", accept
+        --any amount of a's can come before any amt of c's or before the first ab
+        --end has same constraint, just make sure it can end in any amt of a's without a c after it
+        --try "caba" pass, "acbacbaba" pass, "abcab" fail, "caccbbabcca" pass
+
+
+
+-- 4. Every string where c occurs an even number of times.
+
+lang4 = "(a|b)*(c(a|b)*c(a|b)*)*"
+        --any amount of a and b can come before the first c, then any amount between
+        --the first and second c, followed by any amt of a and bs, any amount of times total
+        --ensures there is always 0 or an even number of c's
+
+        --try "acacba" pass, "ab" pass, "accbb" pass "ccaccbbbabababc" fail
+
+
+
+-- 5. Every string not containing the sequence abc.
+
+lang5 = "(a(ba|a)*(bb|c)|b|c)*((a(ba|a)*(b|e))|e)"
+        --c cant follow b only if the b was preceeded by an a
+        --any amt of a's followed by b's but can only be "ba" or "bb" if preceeded by an a
+                --dont let a be followed by b, only by ba or bb
+                --ba and bb can be followed by c
+        --if doesnt start with a, allow any combo of b or c
+        --if ending with a's, do not allow b to be followed by c
+                --end string with e
+        --try "cabcabcabbba" fail, "acbcacba" pass

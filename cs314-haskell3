@@ -1,0 +1,150 @@
+{-# LANGUAGE DeriveFunctor, DeriveFoldable #-}
+module HW3 where
+
+import Data.Foldable
+
+{------------------------------------------------------------------------------------}
+
+data Tree a 
+    = Tip 
+    | Bin (Tree a) a (Tree a) 
+    deriving (Show, Eq, Functor, Foldable)
+
+emptytree = Tip
+mytree = Bin (Bin (Bin Tip 1 Tip) 5 (Bin Tip 7 Tip)) 10 (Bin (Bin Tip 11 Tip) 15 (Bin Tip 20 Tip))
+badtree = Bin (Bin Tip 1 Tip) 4 (Bin Tip 2 Tip)
+
+ltree = Bin (Bin Tip () Tip) () (Bin Tip () Tip)
+elist = [10,20,30]
+
+ltree2 = Bin (Bin (Bin Tip () Tip) () (Bin Tip () Tip)) () (Bin (Bin Tip () Tip) () (Bin Tip () Tip))
+elist2 = [1,2,3,4,5,6,7]
+
+pqtree = Bin (Bin (Bin Tip 9 Tip) 4 (Bin Tip 6 Tip)) 1 (Bin Tip 3 Tip)
+pqtreemin = Bin (Bin (Bin Tip 9 Tip) 4 (Bin Tip 6 Tip)) 3 Tip
+
+{------------------------------------------------------------------------------------}
+
+-- 1. Insert an element into a binary search tree. That is, replace
+-- a Tip somewhere in the tree with Bin Tip a Tip, where a is the value
+-- being inserted.
+--
+-- You may assume that the input tree has the binary search tree property.
+
+insertBST :: Ord a => a -> Tree a -> Tree a
+insertBST n Tip = Bin Tip n Tip
+insertBST n (Bin l a r)
+    | n < a     = Bin (insertBST n l) a r
+    | n > a     = Bin l a (insertBST n r)
+    | otherwise = Bin l a r
+
+-- n<a, insert in left subtree
+-- n>a, insert in right subtree
+-- n==a, no dupes > skip insertion (assuming this is no dupe???)
+
+{------------------------------------------------------------------------------------}
+
+-- 2. Check whether the given tree is a binary search tree. That is, for a
+-- non-Tip tree Bin l a r, all elements in l are less than a, all elements in
+-- r are greater than a, and both l and r are binary search trees.
+--
+-- Challenge: can you write this function such that each Bin Bin is visited
+-- at most once?
+
+isBST :: Ord a => Tree a -> Bool
+isBST Tip = True
+isBST (Bin l a r) = all (< a) l && all (> a) r && isBST l && isBST r
+
+--check left subtree (Bin _ b _) is valid only when b<a
+--check right subtree (Bin _ b _) is valid only when b>a
+
+{------------------------------------------------------------------------------------}
+
+-- 3. Write a function that extracts the minimum entry from a priority queue.
+--
+-- We define a priority queue as a binary tree in which each path from the
+-- root to a leaf is non-decreasing.
+
+isPQ :: Ord a => Tree a -> Bool
+isPQ Tip = True
+isPQ (Bin l a r) = check a l && check a r
+    where
+    check a Tip = True
+    check a (Bin l b r) = a <= b && check b l && check b r
+
+-- getMin t should return Nothing if the tree is Tip, and Just (a, t')
+-- otherwise, where a is the element at the root of t and t' is a priority
+-- queue containing the remaining elements of t
+
+getMin :: Ord a => Tree a -> Maybe (a, Tree a)
+getMin Tip = Nothing
+getMin (Bin Tip a r) = Just (a, r)         -- if the left subtree is empty, return the right subtree
+getMin (Bin l a r) = Just (a, merge l r)
+    where
+    merge Tip r = r
+    merge l Tip = l
+    merge (Bin ll la lr) (Bin rl ra rr)
+        | la <= ra  = Bin (merge lr (Bin rl ra rr)) la ll
+        | otherwise = Bin (merge (Bin ll la lr) rr) ra rl
+
+    -- if the left subtree is empty, return the right subtree
+    -- if the right subtree is empty, return the left subtree
+    -- if both subtrees are non-empty, compare the roots of the two subtrees
+        -- if the root of the left subtree is smaller, make it the new root and merge trees
+        -- if the root of the right subtree is smaller, make it the new root and merge trees
+ 
+{------------------------------------------------------------------------------------}
+
+-- 4. Given a tree and a list of elements, produce a new tree containing those
+-- elements in left-to-right order (in general, not a binary search tree).
+--
+-- You may assume that the list has exactly as many elements as there are spots
+-- in the tree.
+--
+-- for all trees t, labelTree (map (const ()) t) (toList t) == t
+
+
+labelTree :: Tree () -> [a] -> Tree a
+labelTree Tip _ = Tip
+labelTree tree es = fst (inOrder tree es)
+  
+--helper method to traverse and replace
+inOrder :: Tree () -> [a] -> (Tree a, [a])
+inOrder (Tip) (es) = (Tip, es)                    --base case, tip do nothing w list of es
+inOrder (Bin left () right) (es) = (Bin newleft e newright, esright)
+    where
+        (newleft, e : esleft) = inOrder left es
+        (newright, esright) = inOrder right esleft
+        --traverse subtrees in order, update tree with new values, and return remaining es
+
+--traverse the tree in order and replace each () with the next element in the list
+--returning the new tree and remaining elements in the list in a tuple
+--return the new tree from the tuple (fst function)
+
+{------------------------------------------------------------------------------------}
+
+-- displayTree prints out a tree in a visual format. You may find it helpful for
+-- examining the structure and contents of a tree.
+--
+-- Do not worry if this code seems incomprehensible.
+
+displayTree :: (Show a) => Tree a -> IO ()
+displayTree Tip = return ()
+displayTree (Bin l a r) = do
+    above "  " r
+    putStrLn ("+ " ++ show a)
+    below "  " l
+    where
+    above indent Tip = return ()
+    above indent (Bin l a r) = do
+        above (indent ++ "  ") r
+        putStrLn (indent ++ "+ " ++ show a)
+        below (indent ++ "| ") l
+        putStrLn (indent ++ "| ")
+        
+    below indent Tip = return ()
+    below indent (Bin l a r) = do
+        putStrLn (indent ++ "| ")
+        above (indent ++ "| ") r
+        putStrLn (indent ++ "+ " ++ show a)
+        below (indent ++ "  ") l
